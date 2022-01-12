@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><service>        
+    <name>XTP_T0_01</name>        
+    <type>Execution</type>        
+    <broker>tcp://127.0.0.1:5431</broker>        
+    <entry>XTP.dll</entry>        
+    <mode>embedded</mode>        
+    <config/>        
+    <properties>                
+        <clientId>125</clientId>                
+        <accountKey>b8aa7173bba3470e390d787219b2112e</accountKey>                
+        <saveFilePath>./XTP</saveFilePath>                
+        <address>120.27.164.69</address>                
+        <port>6001</port>                
+        <username>username</username>                
+        <password>qqeeeeee</password>                
+    </properties>        
+</service>
