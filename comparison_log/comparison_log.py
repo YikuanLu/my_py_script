@@ -16,9 +16,9 @@ def get_argv():
     real_url = None
     simulation_url = None
     argv = sys.argv[1:]
+
     try:
         opts, args = getopt.getopt(argv, "m:r:")  # 短选项模式
-
     except:
         print("Error")
 
@@ -58,6 +58,7 @@ def data_cleaning(url):
         result = np.array(list(map(lambda x: x.split(','), str_ls)))
         pd_data = pd.DataFrame(result)
         pd_data[2] = pd_data[2].apply(lambda x: x.strip())
+        # 方向-股票代码组成key
         pd_data[0] = pd_data[0].apply(
             lambda x: x[x.find(':')+1:].strip()) + '-' + pd_data[2]
         pd_data[6] = pd_data[6].apply(lambda x: x.strip())
@@ -68,6 +69,7 @@ def data_cleaning(url):
         keys = list(groups.groups.keys())  # 获取所有组的keys
         # print(groups.get_group(keys[2]))  # 获取某组数据
         drop_duplicates_data = pd_data.drop_duplicates(subset=0)
+        drop_duplicates_data.index = list(drop_duplicates_data[0])
         return keys, drop_duplicates_data
 
 
@@ -91,29 +93,37 @@ def create_result_data(simulation_data, real_data):
     return result_df
 
 
+def create_union_datas(simulation_data, real_data):
+    print(simulation_data)
+    print(real_data)
+    new_data = pd.concat([simulation_data, real_data], axis=1)
+    new_data = new_data.drop(labels=0, axis=1)  # axis=1 表示按列删除，删除0列
+    new_data.columns = list(range(14))
+    new_data = new_data.drop(labels=0, axis=1)
+    new_data = new_data.drop(labels=1, axis=1)
+    new_data = new_data.drop(labels=7, axis=1)
+    new_data = new_data.drop(labels=8, axis=1)
+    new_data['时差'] = new_data[6] - new_data[13]
+    new_data = new_data.drop(labels=6, axis=1)
+    new_data = new_data.drop(labels=13, axis=1)
+    new_data.columns = ['模拟笔数', '模拟发单价', '模拟订单号',
+                        '模拟发单时间', '实盘笔数', '实盘发单价', '实盘订单号', '实盘发单时间', '时差(模拟-实盘)']
+    # new_data = pd.concat([simulation_data,real_data],axis=1)
+    # new_data = pd.DataFrame()
+    # new_data['key'] = unions
+    # new_data['股票代码'] = new_data['key'].apply(lambda x: x[x.find('-')+1:])
+    # new_data['方向'] = new_data['key'].apply(lambda x: x[:x.find('-')])
+    # new_data['模拟时间'] = simulation_data[6]
+
+    print(new_data)
+    new_data.to_excel('result.xls', encoding='utf_8')
+
+
 if __name__ == "__main__":
     real_url, simulation_url = get_argv()
+
+    # 获取数据的key和dataFrame数据
     real_keys, real_pd_data = data_cleaning(real_url)
     simulation_keys, simulation_pd_data = data_cleaning(simulation_url)
 
-    same_codes = set(real_keys) & set(simulation_keys)
-
-    to_use_real_data = real_pd_data.loc[real_pd_data[2].isin(same_codes)]
-    to_use_simulation_data = simulation_pd_data.loc[simulation_pd_data[2].isin(
-        same_codes)]  # 模拟
-
-    same_use_data = set(to_use_real_data[0]) & set(to_use_simulation_data[0])
-    to_use_simulation_data = to_use_simulation_data.loc[to_use_simulation_data[0].isin(
-        same_use_data)]
-    to_use_simulation_data.index = range(len(to_use_simulation_data))
-
-    to_use_real_data = to_use_real_data.loc[to_use_real_data[0].isin(
-        same_use_data)]
-    to_use_real_data.index = range(len(to_use_real_data))
-
-    result_df = create_result_data(to_use_simulation_data, to_use_real_data)
-
-    logging.info(F'模拟盘多做:{set(simulation_keys)-set(real_keys)}')
-    logging.info(F'实盘多做:{set(real_keys)-set(simulation_keys)}')
-    logging.info(result_df)
-    result_df.to_csv('result.csv')
+    create_union_datas(simulation_pd_data, real_pd_data)
